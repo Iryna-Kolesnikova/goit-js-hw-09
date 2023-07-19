@@ -1,49 +1,69 @@
 import flatpickr from "flatpickr";
 import "flatpickr/dist/flatpickr.min.css";
 
-const dateTimePicker = document.getElementById('datetime-picker')
+const dateTimePicker = document.getElementById('datetime-picker');
 const startBtn = document.getElementById('startBtn');
-const daysEl = document.querySelector('[data-days]')
-const hoursEl = document.querySelector('[data-hours]')
-const minutesEl = document.querySelector('[data-minutes]')
-const secondsEl = document.querySelector('[data-seconds]')
-
+const daysEl = document.querySelector('[data-days]');
+const hoursEl = document.querySelector('[data-hours]');
+const minutesEl = document.querySelector('[data-minutes]');
+const secondsEl = document.querySelector('[data-seconds]');
 
 let countdownIntervalId = null;
+let selectedDate = null;
 
+function isDateInFuture(selectedDate) {
+    const currentDate = new Date();
+    const selectedDateTime = new Date(selectedDate);
+    return selectedDateTime > currentDate;
+}
 
-startBtn.addEventListener('click', () => startCountdown(dateTimePicker.value));
+function updateStartButtonStatus() {
+    const isButtonActive = isDateInFuture(selectedDate) && countdownIntervalId === null;
+    startBtn.disabled = !isButtonActive;
+}
+
+dateTimePicker.addEventListener('change', () => {
+    selectedDate = dateTimePicker.value;
+    updateStartButtonStatus();
+});
 
 const options = {
     enableTime: true,
     time_24hr: true,
     defaultDate: new Date(),
     minuteIncrement: 1,
-    onClose(selectedDate) {
-        const date = selectedDate[0];
-        if (selectedDate < new Date()) {
+    onClose(selectedDates) {
+        selectedDate = selectedDates[0];
+        if (!isDateInFuture(selectedDate)) {
             alert("Please choose a date in the future");
             startBtn.disabled = true;
-            return;
+        } else {
+            updateStartButtonStatus();
         }
-        startBtn.disabled = false;
     }
-}
+};
 
 flatpickr(dateTimePicker, options);
 
 function startCountdown(endDate) {
     if (countdownIntervalId) return;
+    startBtn.disabled = true; // Заблокувати кнопку під час відліку
     countdownIntervalId = setInterval(() => {
         const remainingTime = getRemainingTime(Date.parse(endDate) - Date.now());
         if (remainingTime.total <= 0) {
             clearInterval(countdownIntervalId);
             countdownIntervalId = null;
-            startBtn.disabled = false;
         }
         updateCountDownUI(remainingTime);
     }, 1000);
+    console.log("End date:", endDate);
 }
+
+startBtn.addEventListener('click', () => {
+    if (selectedDate && isDateInFuture(selectedDate)) {
+        startCountdown(selectedDate);
+    }
+});
 
 function getRemainingTime(ms) {
     // Number of milliseconds per unit of time
